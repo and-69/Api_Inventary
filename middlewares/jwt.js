@@ -1,10 +1,12 @@
 import 'dotenv/config'
+import jwt from 'jsonwebtoken'
+import Users from '../models/user.js'
 
-const generarJWT = (uid) => {
+const generarJWT = (_id) => {
     return new Promise((resolve, reject) => {
-        const payload = { uid }
-        jwt.sign(payload, process.env.JTW_PD, {
-            expiresIn: "20s"
+        const payload = { _id }
+        jwt.sign(payload, process.env.JWT_PD, {
+            expiresIn: '4h'
         }, (err, token) => {
             if (err) {
                 console.log(err);
@@ -17,29 +19,26 @@ const generarJWT = (uid) => {
 }
 
 const validarJWT = async (req, res, next) => {
-    const token = req.header("x-token");
+    const token = req.header('Authorization')
     if (!token) {
         return res.status(401).json({
-            msg: "No hay token en la peticion"
+            msg: "No hay token en la peticion",
         })
     }
     try {
-        const { uid } = jwt.verify(token, process.env.JTW_PD)
-        let usuario = await Users.findById(uid);
-        if (!usuario) {
+        const { _id } = jwt.verify(token, process.env.JWT_PD)
+        const usuario = await Users.findById(_id);
+        if (!usuario || usuario.estado == 0) {
             return res.status(401).json({
-                msg: "Token no válido "
+                msg: "Token no válido - Usuario inexistente o inactivo"
             })
         }
-        if (usuario.estado == 0) {
-            return res.status(401).json({
-                msg: "Token no válido "
-            })
-        }
+        req.usuario = usuario;
         next();
     } catch (error) {
         res.status(401).json({
-            msg: "Token no valido"
+            msg: "Token no valido",
+            error: error.message
         })
     }
 }

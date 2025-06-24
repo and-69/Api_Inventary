@@ -5,9 +5,7 @@ import router from './routes/routes.js'
 
 const inventary = express()
 inventary.use(express.json()) 
-inventary.use(express.static('public'))
 inventary.use('/apinv', router)
-
 
 mongoose.connect(process.env.MONGO_CNX)
   .then(() => console.log('Connected to BD'))
