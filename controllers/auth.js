@@ -1,4 +1,5 @@
 import Users from "../models/user.js";
+import Products from "../models/producto.js";
 import bcryptjs from "bcryptjs";
 import { generarJWT } from "../middlewares/jwt.js";
 
@@ -16,7 +17,8 @@ const auth = {
                     username: holder.username,
                     email: holder.email,
                     token: token
-                }
+                },
+                msg: "Holder logueado correctamente",
             })
         } catch (error) {
             return res.status(500).json({
@@ -32,14 +34,11 @@ const auth = {
             holder.password = bcryptjs.hashSync(password, salt);
             await holder.save();
 
-            const token = await generarJWT(holder._id);
-            res.setHeader('Authorization', token);
             res.status(201).json({
                 holder: {
                     _id: holder._id,
                     username: holder.username,
                     email: holder.email,
-                    token: token
                 },
                 msg: "Holder registrado correctamente",
             })
@@ -52,26 +51,11 @@ const auth = {
     },
 
     dashboard: async (req, res) => {
-        const { email, password } = req.body;
         try {
+            const { token } = req.header('Authorization');
+            const { email, password } = req.body;
             const usuario = await Users.findOne({ email })
-            if (!usuario) {
-                return res.status(400).json({
-                    msg: "Usuario / Password no son correctos"
-                })
-            }
-            if (usuario.estado === 0) {
-                return res.status(400).json({
-                    msg: "Holder Inactivo"
-                })
-            }
-            const validPassword = bcryptjs.compareSync(password, usuario.password);
-            if (!validPassword) {
-                return res.status(400).json({
-                    msg: "Usuario / Password no son correctos"
-                })
-            }
-            const token = await generarJWT(usuario.id);
+
             res.json({
                 usuario,
                 token
